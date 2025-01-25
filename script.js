@@ -30,7 +30,7 @@ shippingForm.addEventListener('submit', function (e) {
   // Push it into our labels array
   labels.push(newLabel);
 
-  // Update the preview
+  // Update the preview on screen
   renderPreview();
 
   // Clear the form fields
@@ -54,7 +54,6 @@ function renderPreview() {
     labelDiv.classList.add('label-item');
 
     labelDiv.innerHTML = `
-      <h3>Label #${index + 1}</h3>
       <p><strong>From:</strong> ${label.from}</p>
       <p><strong>To:</strong> ${label.to}</p>
       <p><strong>Address:</strong> ${label.address}</p>
@@ -65,7 +64,8 @@ function renderPreview() {
 }
 
 /**
- * Generate a single PDF with all labels, each on its own page
+ * Generate a single PDF with *all* shipping labels on the same page
+ * (smaller font, Times, each label separated by a blank line)
  */
 downloadPdfBtn.addEventListener('click', function () {
   // Check if jsPDF is loaded
@@ -77,17 +77,20 @@ downloadPdfBtn.addEventListener('click', function () {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
-  labels.forEach((label, index) => {
-    // Put each label on its own page (except the first)
-    if (index > 0) {
-      doc.addPage();
-    }
+  // Set font to Times, normal style, size 12
+  doc.setFont('times', 'normal');
+  doc.setFontSize(12);
 
-    let yPos = 10;
-    doc.text(`Label #${index + 1}`, 10, yPos); yPos += 10;
-    doc.text(`From: ${label.from}`, 10, yPos); yPos += 10;
-    doc.text(`To: ${label.to}`, 10, yPos); yPos += 10;
+  let yPos = 10;
+
+  labels.forEach((label) => {
+    doc.text(`From: ${label.from}`, 10, yPos);
+    yPos += 10;
+    doc.text(`To: ${label.to}`, 10, yPos);
+    yPos += 10;
     doc.text(`Address: ${label.address}`, 10, yPos);
+    // Add a blank line after each label
+    yPos += 15;
   });
 
   // Download the PDF
