@@ -24,19 +24,18 @@
     <button type="submit" id="addLabelBtn">Add Shipping Label</button>
   </form>
 
-  <!-- Button to download the final PDF once all labels have been added -->
+  <!-- Button to download the final PDF once labels have been added -->
   <button id="downloadPdfBtn" style="display: none;">Download PDF</button>
 
   <!-- List of all shipping labels as a preview -->
   <div id="preview"></div>
 
-  <!-- Include jsPDF from a CDN -->
+  <!-- Include jsPDF from a CDN (no integrity attribute to avoid mismatch) -->
   <script
-    src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"
-    integrity="sha256-WqIyZ7BPdwbTTSKGwgcSkkXAKPsnBn0zRrTtc3BkWXk="
-    crossorigin="anonymous">
+    src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js">
   </script>
 
+  <!-- Our custom script goes here, after the DOM elements exist -->
   <script src="script.js"></script>
 </body>
 </html>
