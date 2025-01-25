@@ -30,7 +30,7 @@ shippingForm.addEventListener('submit', function (e) {
   // Push it into our labels array
   labels.push(newLabel);
 
-  // Update the preview on screen
+  // Update the preview
   renderPreview();
 
   // Clear the form fields
@@ -65,28 +65,28 @@ function renderPreview() {
 }
 
 /**
- * Generate a single PDF with *all* shipping labels (each on its own page)
+ * Generate a single PDF with all labels, each on its own page
  */
 downloadPdfBtn.addEventListener('click', function () {
-  // Extract jsPDF from the UMD bundle
+  // Check if jsPDF is loaded
+  if (!window.jspdf) {
+    alert('Error: jsPDF failed to load!');
+    return;
+  }
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
   labels.forEach((label, index) => {
-    // Put each label on its own page (except the first one)
+    // Put each label on its own page (except the first)
     if (index > 0) {
       doc.addPage();
     }
 
-    // Starting text position
     let yPos = 10;
-
-    doc.text(`Label #${index + 1}`, 10, yPos);
-    yPos += 10;
-    doc.text(`From: ${label.from}`, 10, yPos);
-    yPos += 10;
-    doc.text(`To: ${label.to}`, 10, yPos);
-    yPos += 10;
+    doc.text(`Label #${index + 1}`, 10, yPos); yPos += 10;
+    doc.text(`From: ${label.from}`, 10, yPos); yPos += 10;
+    doc.text(`To: ${label.to}`, 10, yPos); yPos += 10;
     doc.text(`Address: ${label.address}`, 10, yPos);
   });
 
