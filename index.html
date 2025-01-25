@@ -9,29 +9,34 @@
 <body>
   <h1>Shipping Label Generator</h1>
 
+  <!-- Form for adding a single shipping label -->
   <form id="shippingForm">
-    <label for="sender">Sender Name:</label>
-    <input type="text" id="sender" required />
+    <label for="fromField">From:</label>
+    <input type="text" id="fromField" required />
 
-    <label for="recipient">Recipient Name:</label>
-    <input type="text" id="recipient" required />
+    <label for="toField">To:</label>
+    <input type="text" id="toField" required />
 
-    <label for="address">Recipient Address:</label>
+    <label for="address">Address:</label>
     <input type="text" id="address" required />
 
-    <button type="submit">Generate Shipping Label</button>
+    <!-- Button to add the label to an in-memory list -->
+    <button type="submit" id="addLabelBtn">Add Shipping Label</button>
   </form>
 
+  <!-- Button to download the final PDF once all labels have been added -->
+  <button id="downloadPdfBtn" style="display: none;">Download PDF</button>
+
+  <!-- List of all shipping labels as a preview -->
   <div id="preview"></div>
 
   <!-- Include jsPDF from a CDN -->
   <script
-    src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-    integrity="sha512-tMa4cwSY5405Mv1QRvlbrs5r2XMQUNChN+5D73srwFd5OCaf8E3hMm9dg1rc/6+jpZJLtBmQCYD3/BvKzR+1Ew=="
-    crossorigin="anonymous"
-    referrerpolicy="no-referrer">
+    src="https://cdn.jsdelivr.net/npm/jspdf/dist/jspdf.umd.min.js"
+    integrity="sha256-WqIyZ7BPdwbTTSKGwgcSkkXAKPsnBn0zRrTtc3BkWXk="
+    crossorigin="anonymous">
   </script>
-  
+
   <script src="script.js"></script>
 </body>
 </html>
