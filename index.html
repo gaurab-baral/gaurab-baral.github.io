@@ -153,8 +153,8 @@
       let yPos = 10;
       // No doc.addPage() calls -> same page
       labels.forEach(label => {
-        doc.text(`From: ${label.from}`, 10, yPos);   yPos += 10;
-        doc.text(`To: ${label.to}`, 10, yPos);       yPos += 10;
+        doc.text(`From: ${label.from}`, 10, yPos);   yPos += 7;
+        doc.text(`To: ${label.to}`, 10, yPos);       yPos += 7;
         doc.text(`Address: ${label.address}`, 10, yPos);
         yPos += 15; // Blank line before next label
       });
