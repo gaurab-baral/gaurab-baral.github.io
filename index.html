@@ -47,7 +47,6 @@
       margin-bottom: 10px;
       border-radius: 5px;
     }
-    /* Button style for removing labels */
     .remove-btn {
       background: #f44336;
       color: #fff;
@@ -185,7 +184,8 @@
       }
     }
 
-    // Generate PDF with all labels in Times 12pt on a single page
+    // Generate PDF with all labels in Times 12pt,
+    // automatically adding a new page if we run out of space
     downloadPdfBtn.addEventListener('click', () => {
       if (!window.jspdf) {
         alert('Error: jsPDF did not load.');
@@ -197,12 +197,35 @@
       doc.setFont('times', 'normal');
       doc.setFontSize(12);
 
+      // We'll check the current page height to see if we need a new page
+      const pageHeight = doc.internal.pageSize.getHeight();
+
       let yPos = 10;
+
       labels.forEach((label) => {
-        doc.text(`From: ${label.from}`, 10, yPos);   yPos += 7;
-        doc.text(`To: ${label.to}`, 10, yPos);       yPos += 7;
+        // "From" line
+        if (yPos + 7 > pageHeight) {
+          doc.addPage();
+          yPos = 10;
+        }
+        doc.text(`From: ${label.from}`, 10, yPos);
+        yPos += 7;
+
+        // "To" line
+        if (yPos + 7 > pageHeight) {
+          doc.addPage();
+          yPos = 10;
+        }
+        doc.text(`To: ${label.to}`, 10, yPos);
+        yPos += 7;
+
+        // "Address" line
+        if (yPos + 7 > pageHeight) {
+          doc.addPage();
+          yPos = 10;
+        }
         doc.text(`Address: ${label.address}`, 10, yPos);
-        yPos += 15; // Blank line before next label
+        yPos += 15; // blank space before next label
       });
 
       doc.save('shipping-labels.pdf');
