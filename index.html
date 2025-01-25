@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- 1) Add an ID to this meta for easy reference in JS -->
+  <!-- An ID for the viewport meta so we can reset mobile zoom -->
   <meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Shipping Label Generator</title>
@@ -36,7 +36,7 @@
       box-sizing: border-box;
     }
 
-    /* ----- BUTTON STYLES ----- */
+    /* Button styling to feel more responsive */
     button {
       background: #4CAF50;
       color: #fff;
@@ -44,22 +44,19 @@
       cursor: pointer;
       margin-bottom: 5px;
 
-      /* Transition for hover/active states */
+      /* Smooth transitions for hover/click effects */
       transition: transform 0.15s ease, background-color 0.2s ease;
     }
 
-    /* Enlarge slightly on hover */
     button:hover {
       transform: scale(1.02);
-      background: #45a049; /* slightly darker/lighter shade */
+      background: #45a049;
     }
 
-    /* Press in on click */
     button:active {
       transform: scale(0.97);
-      background: #449a48; /* even darker shade */
+      background: #449a48;
     }
-    /* -------------------------- */
 
     #preview {
       margin-top: 30px;
@@ -136,7 +133,7 @@
     const previewDiv = document.getElementById('preview');
     const downloadPdfBtn = document.getElementById('downloadPdfBtn');
 
-    // 2) This function forces the mobile view to reset
+    // Force mobile view to reset (zoom out) after submission
     function forceMobileReset() {
       const metaTag = document.getElementById('viewportMeta');
       // Temporarily set maximum-scale=1.0 to force a zoom-out
@@ -151,7 +148,7 @@
     shippingForm.addEventListener('submit', (e) => {
       e.preventDefault();
 
-      // Build the single address string
+      // Grab each field individually
       const fromValue = fromField.value.trim();
       const toValue = toField.value.trim();
       const addressValue = addressField.value.trim();
@@ -159,26 +156,27 @@
       const stateValue = stateField.value.trim();
       const zipValue = zipField.value.trim();
 
-      const fullAddress = `${addressValue}, ${cityValue}, ${stateValue} ${zipValue}`;
-
-      // Create a label object
+      // Create a label object (store separately)
       const newLabel = {
         from: fromValue,
         to: toValue,
-        address: fullAddress
+        address: addressValue,
+        city: cityValue,
+        state: stateValue,
+        zip: zipValue
       };
 
-      // Add to array and render
+      // Add to array
       labels.push(newLabel);
       renderPreview();
 
       // Clear fields
       shippingForm.reset();
 
-      // Blur active element (closes keyboard)
+      // Close keyboard on mobile
       document.activeElement.blur();
 
-      // 3) Force the mobile view to reset (zoom out, default scale)
+      // Force mobile view back to default
       forceMobileReset();
 
       // Show "Download PDF" if there's at least one label
@@ -190,13 +188,20 @@
     function renderPreview() {
       previewDiv.innerHTML = '';
 
+      // For each label, we show Address on one line, then City/State/Zip on the next
       labels.forEach((label, index) => {
         const labelDiv = document.createElement('div');
         labelDiv.classList.add('label-item');
+
+        // City, State, Zip all in one line: "City, State ZipCode"
+        const cityStateZip = `${label.city}, ${label.state} ${label.zip}`;
+
         labelDiv.innerHTML = `
           <p><strong>From:</strong> ${label.from}</p>
           <p><strong>To:</strong> ${label.to}</p>
           <p><strong>Address:</strong> ${label.address}</p>
+          <p><strong>City/State/Zip:</strong> ${cityStateZip}</p>
+
           <button class="remove-btn" data-index="${index}">Remove</button>
         `;
         previewDiv.appendChild(labelDiv);
@@ -213,6 +218,7 @@
       labels.splice(index, 1);
       renderPreview();
 
+      // Hide PDF button if no labels left
       if (labels.length === 0) {
         downloadPdfBtn.style.display = 'none';
       }
@@ -231,8 +237,9 @@
       const pageHeight = doc.internal.pageSize.getHeight();
       let yPos = 10;
 
-      // Page-break logic
+      // Loop each label, printing line by line
       labels.forEach((label) => {
+        // "From" line
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
@@ -240,6 +247,7 @@
         doc.text(`From: ${label.from}`, 10, yPos);
         yPos += 7;
 
+        // "To" line
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
@@ -247,12 +255,23 @@
         doc.text(`To: ${label.to}`, 10, yPos);
         yPos += 7;
 
+        // "Address" line
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
         }
         doc.text(`Address: ${label.address}`, 10, yPos);
-        yPos += 15;
+        yPos += 7;
+
+        // City/State/Zip line
+        const cityStateZip = `${label.city}, ${label.state} ${label.zip}`;
+
+        if (yPos + 7 > pageHeight) {
+          doc.addPage();
+          yPos = 10;
+        }
+        doc.text(`City/State/Zip: ${cityStateZip}`, 10, yPos);
+        yPos += 15; // blank space before next label
       });
 
       doc.save('shipping-labels.pdf');
