@@ -2,14 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>Shipping Label Generator</title>
-  <link rel="stylesheet" href="style.css" />
+  <title>Shipping Label Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    h1 {
+      text-align: center;
+    }
+    form {
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-bottom: 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    #preview {
+      margin-top: 30px;
+    }
+    .label-item {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+    }
+    .label-item h3 {
+      margin-top: 0;
+    }
+  </style>
 </head>
 <body>
   <h1>Shipping Label Generator</h1>
 
-  <!-- Form for adding a single shipping label -->
+  <!-- Form for adding a label -->
   <form id="shippingForm">
     <label for="fromField">From:</label>
     <input type="text" id="fromField" required />
@@ -20,20 +66,101 @@
     <label for="address">Address:</label>
     <input type="text" id="address" required />
 
-    <!-- Button to add the label to an in-memory list -->
-    <button type="submit" id="addLabelBtn">Add Shipping Label</button>
+    <button type="submit">Add Shipping Label</button>
   </form>
 
-  <!-- Button to download the final PDF once labels have been added -->
+  <!-- Download button (hidden until labels exist) -->
   <button id="downloadPdfBtn" style="display: none;">Download PDF</button>
 
-  <!-- List of all shipping labels as a preview -->
+  <!-- Preview container -->
   <div id="preview"></div>
 
-  <!-- Include jsPDF from a CDN (no integrity attribute to avoid SRI blocking) -->
+  <!-- Load jsPDF WITHOUT integrity attribute -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-  <!-- Our custom script -->
-  <script src="script.js"></script>
+  <!-- Inline JS so there's no mismatch -->
+  <script>
+    // Store all shipping labels in this array
+    const labels = [];
+
+    // Get references to DOM elements
+    const shippingForm = document.getElementById('shippingForm');
+    const fromField = document.getElementById('fromField');
+    const toField = document.getElementById('toField');
+    const addressField = document.getElementById('address');
+    const previewDiv = document.getElementById('preview');
+    const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+
+    // On form submit
+    shippingForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fromValue = fromField.value.trim();
+      const toValue = toField.value.trim();
+      const addressValue = addressField.value.trim();
+
+      // Create a label object
+      const newLabel = {
+        from: fromValue,
+        to: toValue,
+        address: addressValue
+      };
+
+      // Push to labels array
+      labels.push(newLabel);
+
+      // Update the preview
+      renderPreview();
+
+      // Clear fields
+      shippingForm.reset();
+
+      // Show "Download PDF" if there's at least 1 label
+      if (labels.length > 0) {
+        downloadPdfBtn.style.display = 'inline-block';
+      }
+    });
+
+    // Renders the preview below the form
+    function renderPreview() {
+      previewDiv.innerHTML = '';
+
+      labels.forEach(label => {
+        const labelDiv = document.createElement('div');
+        labelDiv.classList.add('label-item');
+        // No "Label #", just the shipping details
+        labelDiv.innerHTML = `
+          <p><strong>From:</strong> ${label.from}</p>
+          <p><strong>To:</strong> ${label.to}</p>
+          <p><strong>Address:</strong> ${label.address}</p>
+        `;
+        previewDiv.appendChild(labelDiv);
+      });
+    }
+
+    // Generate PDF with all labels in Times 12pt, same page
+    downloadPdfBtn.addEventListener('click', () => {
+      if (!window.jspdf) {
+        alert('Error: jsPDF did not load.');
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      // Use Times, normal style, 12pt
+      doc.setFont('times', 'normal');
+      doc.setFontSize(12);
+
+      let yPos = 10;
+      // No doc.addPage() calls -> same page
+      labels.forEach(label => {
+        doc.text(`From: ${label.from}`, 10, yPos);   yPos += 10;
+        doc.text(`To: ${label.to}`, 10, yPos);       yPos += 10;
+        doc.text(`Address: ${label.address}`, 10, yPos);
+        yPos += 15; // Blank line before next label
+      });
+
+      doc.save('shipping-labels.pdf');
+    });
+  </script>
 </body>
 </html>
