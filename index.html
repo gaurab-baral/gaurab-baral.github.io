@@ -1,13 +1,40 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="UFT-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Testing this</title>
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Shipping Label Generator</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-    <h1>I'm just trying to see if this works</h1>
-    <button>Hello There</button>
+  <h1>Shipping Label Generator</h1>
+
+  <form id="shippingForm">
+    <label for="sender">Sender Name:</label>
+    <input type="text" id="sender" required />
+
+    <label for="recipient">Recipient Name:</label>
+    <input type="text" id="recipient" required />
+
+    <label for="address">Recipient Address:</label>
+    <input type="text" id="address" required />
+
+    <label for="weight">Package Weight (kg):</label>
+    <input type="number" id="weight" required />
+
+    <button type="submit">Generate Shipping Label</button>
+  </form>
+
+  <div id="preview"></div>
+
+  <!-- Include jsPDF from a CDN -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+    integrity="sha512-tMa4cwSY5405Mv1QRvlbrs5r2XMQUNChN+5D73srwFd5OCaf8E3hMm9dg1rc/6+jpZJLtBmQCYD3/BvKzR+1Ew=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer">
+  </script>
+  
+  <script src="script.js"></script>
 </body>
 </html>
