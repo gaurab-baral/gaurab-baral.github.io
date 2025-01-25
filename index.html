@@ -13,43 +13,65 @@
       max-width: 600px;
       margin: 0 auto;
     }
+
     h1 {
       text-align: center;
     }
+
     form {
       margin-top: 20px;
       margin-bottom: 20px;
     }
+
     label {
       display: block;
       margin-top: 10px;
       font-weight: bold;
     }
+
     input, button {
       width: 100%;
       padding: 10px;
       margin-top: 5px;
       box-sizing: border-box;
     }
+
+    /* ----- BUTTON STYLES ----- */
     button {
       background: #4CAF50;
       color: #fff;
       border: none;
       cursor: pointer;
       margin-bottom: 5px;
+
+      /* Transition for hover/active states */
+      transition: transform 0.15s ease, background-color 0.2s ease;
     }
+
+    /* Enlarge slightly on hover */
     button:hover {
-      background: #45a049;
+      transform: scale(1.02);
+      background: #45a049; /* slightly darker/lighter shade */
     }
+
+    /* Press in on click */
+    button:active {
+      transform: scale(0.97);
+      background: #449a48; /* even darker shade */
+    }
+    /* -------------------------- */
+
     #preview {
       margin-top: 30px;
     }
+
     .label-item {
       border: 1px solid #ccc;
       padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
     }
+
     .remove-btn {
       background: #f44336;
       color: #fff;
@@ -58,6 +80,7 @@
       padding: 6px 12px;
       margin-top: 10px;
     }
+
     .remove-btn:hover {
       background: #e53935;
     }
