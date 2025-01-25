@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Viewport: set normally at first -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- 1) Add an ID to this meta for easy reference in JS -->
+  <meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Shipping Label Generator</title>
   <style>
     body {
@@ -112,6 +113,18 @@
     const previewDiv = document.getElementById('preview');
     const downloadPdfBtn = document.getElementById('downloadPdfBtn');
 
+    // 2) This function forces the mobile view to reset
+    function forceMobileReset() {
+      const metaTag = document.getElementById('viewportMeta');
+      // Temporarily set maximum-scale=1.0 to force a zoom-out
+      metaTag.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
+
+      // After a short delay, remove the maximum-scale restriction
+      setTimeout(() => {
+        metaTag.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      }, 300);
+    }
+
     shippingForm.addEventListener('submit', (e) => {
       e.preventDefault();
 
@@ -139,12 +152,13 @@
       // Clear fields
       shippingForm.reset();
 
-      // Blur active element (close keyboard)
+      // Blur active element (closes keyboard)
       document.activeElement.blur();
 
-      // 1) Force viewport to default scale
+      // 3) Force the mobile view to reset (zoom out, default scale)
       forceMobileReset();
 
+      // Show "Download PDF" if there's at least one label
       if (labels.length > 0) {
         downloadPdfBtn.style.display = 'inline-block';
       }
@@ -166,8 +180,7 @@
       });
 
       // Attach remove handlers
-      const removeBtns = document.querySelectorAll('.remove-btn');
-      removeBtns.forEach((btn) => {
+      document.querySelectorAll('.remove-btn').forEach((btn) => {
         btn.addEventListener('click', removeLabel);
       });
     }
@@ -180,18 +193,6 @@
       if (labels.length === 0) {
         downloadPdfBtn.style.display = 'none';
       }
-    }
-
-    // 2) Function to forcibly reset viewport scale
-    function forceMobileReset() {
-      const meta = document.querySelector('meta[name="viewport"]');
-      // Temporarily disallow scaling to force a zoom out
-      meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
-
-      // Re-allow zoom after a brief delay
-      setTimeout(() => {
-        meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
-      }, 300);
     }
 
     downloadPdfBtn.addEventListener('click', () => {
