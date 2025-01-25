@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- Viewport meta for mobile responsiveness -->
+  <!-- Viewport: set normally at first -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Shipping Label Generator</title>
   <style>
@@ -99,10 +99,8 @@
 
   <!-- Inline JS -->
   <script>
-    // We'll store all shipping labels in this array
     let labels = [];
 
-    // Grab references to DOM elements
     const shippingForm = document.getElementById('shippingForm');
     const fromField = document.getElementById('fromField');
     const toField = document.getElementById('toField');
@@ -114,7 +112,6 @@
     const previewDiv = document.getElementById('preview');
     const downloadPdfBtn = document.getElementById('downloadPdfBtn');
 
-    // On form submit
     shippingForm.addEventListener('submit', (e) => {
       e.preventDefault();
 
@@ -126,7 +123,6 @@
       const stateValue = stateField.value.trim();
       const zipValue = zipField.value.trim();
 
-      // Concatenate into one field
       const fullAddress = `${addressValue}, ${cityValue}, ${stateValue} ${zipValue}`;
 
       // Create a label object
@@ -136,25 +132,24 @@
         address: fullAddress
       };
 
-      // Push to labels array
+      // Add to array and render
       labels.push(newLabel);
-
-      // Update the preview
       renderPreview();
 
       // Clear fields
       shippingForm.reset();
 
-      // 1) Blur the active element to close mobile keyboard
+      // Blur active element (close keyboard)
       document.activeElement.blur();
 
-      // Show "Download PDF" if there's at least 1 label
+      // 1) Force viewport to default scale
+      forceMobileReset();
+
       if (labels.length > 0) {
         downloadPdfBtn.style.display = 'inline-block';
       }
     });
 
-    // Renders the preview list of labels
     function renderPreview() {
       previewDiv.innerHTML = '';
 
@@ -170,27 +165,35 @@
         previewDiv.appendChild(labelDiv);
       });
 
-      // Add click listener to each Remove button
-      const removeButtons = document.querySelectorAll('.remove-btn');
-      removeButtons.forEach((btn) => {
+      // Attach remove handlers
+      const removeBtns = document.querySelectorAll('.remove-btn');
+      removeBtns.forEach((btn) => {
         btn.addEventListener('click', removeLabel);
       });
     }
 
-    // Remove a label by index and re-render
     function removeLabel(e) {
-      const indexToRemove = e.target.getAttribute('data-index');
-      labels.splice(indexToRemove, 1);
+      const index = e.target.dataset.index;
+      labels.splice(index, 1);
       renderPreview();
 
-      // Hide PDF button if no labels left
       if (labels.length === 0) {
         downloadPdfBtn.style.display = 'none';
       }
     }
 
-    // Generate PDF with all labels in Times 12pt,
-    // automatically adding a new page if we run out of space
+    // 2) Function to forcibly reset viewport scale
+    function forceMobileReset() {
+      const meta = document.querySelector('meta[name="viewport"]');
+      // Temporarily disallow scaling to force a zoom out
+      meta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
+
+      // Re-allow zoom after a brief delay
+      setTimeout(() => {
+        meta.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      }, 300);
+    }
+
     downloadPdfBtn.addEventListener('click', () => {
       if (!window.jspdf) {
         alert('Error: jsPDF did not load.');
@@ -198,17 +201,14 @@
       }
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
-
       doc.setFont('times', 'normal');
       doc.setFontSize(12);
 
-      // We'll check the current page height to see if we need a new page
       const pageHeight = doc.internal.pageSize.getHeight();
-
       let yPos = 10;
 
+      // Page-break logic
       labels.forEach((label) => {
-        // "From" line
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
@@ -216,7 +216,6 @@
         doc.text(`From: ${label.from}`, 10, yPos);
         yPos += 7;
 
-        // "To" line
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
@@ -224,13 +223,12 @@
         doc.text(`To: ${label.to}`, 10, yPos);
         yPos += 7;
 
-        // "Address" line
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
         }
         doc.text(`Address: ${label.address}`, 10, yPos);
-        yPos += 15; // blank space before next label
+        yPos += 15;
       });
 
       doc.save('shipping-labels.pdf');
