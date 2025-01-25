@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Shipping Label Test</title>
+  <title>Shipping Label Generator</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -30,7 +30,7 @@
     }
     button {
       background: #4CAF50;
-      color: white;
+      color: #fff;
       border: none;
       cursor: pointer;
       margin-bottom: 5px;
@@ -46,17 +46,15 @@
       padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
-      position: relative;
     }
+    /* Button style for removing labels */
     .remove-btn {
       background: #f44336;
       color: #fff;
       border: none;
       cursor: pointer;
       padding: 6px 12px;
-      position: absolute;
-      right: 10px;
-      top: 10px;
+      margin-top: 10px;
     }
     .remove-btn:hover {
       background: #e53935;
@@ -95,15 +93,15 @@
   <!-- Preview container -->
   <div id="preview"></div>
 
-  <!-- Load jsPDF WITHOUT integrity attribute -->
+  <!-- Load jsPDF (no integrity attribute) -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
-  <!-- Inline JS so there's no mismatch -->
+  <!-- Inline JS -->
   <script>
-    // Store all shipping labels in this array
+    // We'll store all shipping labels in this array
     let labels = [];
 
-    // Get references to DOM elements
+    // Grab references to DOM elements
     const shippingForm = document.getElementById('shippingForm');
     const fromField = document.getElementById('fromField');
     const toField = document.getElementById('toField');
@@ -152,14 +150,13 @@
       }
     });
 
-    // Renders the preview below the form
+    // Renders the preview list of labels
     function renderPreview() {
       previewDiv.innerHTML = '';
 
       labels.forEach((label, index) => {
         const labelDiv = document.createElement('div');
         labelDiv.classList.add('label-item');
-
         labelDiv.innerHTML = `
           <p><strong>From:</strong> ${label.from}</p>
           <p><strong>To:</strong> ${label.to}</p>
@@ -169,27 +166,26 @@
         previewDiv.appendChild(labelDiv);
       });
 
-      // Attach click listeners to all Remove buttons
+      // Add click listener to each Remove button
       const removeButtons = document.querySelectorAll('.remove-btn');
-      removeButtons.forEach(button => {
-        button.addEventListener('click', removeLabel);
+      removeButtons.forEach((btn) => {
+        btn.addEventListener('click', removeLabel);
       });
     }
 
-    // Removes a label from the list (by index) and re-renders
+    // Remove a label by index and re-render
     function removeLabel(e) {
       const indexToRemove = e.target.getAttribute('data-index');
-      // Splice the labels array
       labels.splice(indexToRemove, 1);
-      // Re-render
       renderPreview();
-      // Hide PDF button if labels array is empty
+
+      // Hide PDF button if no labels left
       if (labels.length === 0) {
         downloadPdfBtn.style.display = 'none';
       }
     }
 
-    // Generate PDF with all labels in Times 12pt, same page
+    // Generate PDF with all labels in Times 12pt on a single page
     downloadPdfBtn.addEventListener('click', () => {
       if (!window.jspdf) {
         alert('Error: jsPDF did not load.');
@@ -198,13 +194,11 @@
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
-      // Use Times, normal style, 12pt
       doc.setFont('times', 'normal');
       doc.setFontSize(12);
 
       let yPos = 10;
-      // Print all labels on the same page
-      labels.forEach(label => {
+      labels.forEach((label) => {
         doc.text(`From: ${label.from}`, 10, yPos);   yPos += 7;
         doc.text(`To: ${label.to}`, 10, yPos);       yPos += 7;
         doc.text(`Address: ${label.address}`, 10, yPos);
