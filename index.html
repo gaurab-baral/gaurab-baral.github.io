@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <!-- An ID for the viewport meta so we can reset mobile zoom -->
   <meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Shipping Label Generator</title>
@@ -13,22 +12,18 @@
       max-width: 600px;
       margin: 0 auto;
     }
-
     h1 {
       text-align: center;
     }
-
     form {
       margin-top: 20px;
       margin-bottom: 20px;
     }
-
     label {
       display: block;
       margin-top: 10px;
       font-weight: bold;
     }
-
     input, button {
       width: 100%;
       padding: 10px;
@@ -36,39 +31,53 @@
       box-sizing: border-box;
     }
 
-    /* Button styling to feel more responsive */
+    /* Button styling */
     button {
       background: #4CAF50;
       color: #fff;
       border: none;
       cursor: pointer;
       margin-bottom: 5px;
-
-      /* Smooth transitions for hover/click effects */
       transition: transform 0.15s ease, background-color 0.2s ease;
     }
-
     button:hover {
       transform: scale(1.02);
       background: #45a049;
     }
-
     button:active {
       transform: scale(0.97);
       background: #449a48;
     }
 
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+      gap: 10px;
+    }
+    .checkbox-row label {
+      display: inline;
+      margin: 0;
+      font-weight: normal;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: auto;
+      margin-top: 0;
+    }
+    .quantity-input {
+      width: 80px;
+      margin-left: auto; /* push to the right in the row */
+    }
+
     #preview {
       margin-top: 30px;
     }
-
     .label-item {
       border: 1px solid #ccc;
       padding: 10px;
       margin-bottom: 10px;
       border-radius: 5px;
     }
-
     .remove-btn {
       background: #f44336;
       color: #fff;
@@ -77,9 +86,20 @@
       padding: 6px 12px;
       margin-top: 10px;
     }
-
     .remove-btn:hover {
       background: #e53935;
+    }
+
+    /* Hide the file input visually (we'll show a button for it) */
+    #fileInput {
+      display: none;
+    }
+
+    /* Export/Import container for layout */
+    .export-import {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
     }
   </style>
 </head>
@@ -106,22 +126,64 @@
     <label for="zipField">Zip Code:</label>
     <input type="text" id="zipField" required />
 
+    <!-- Checkboxes for small/medium orders -->
+    <div class="checkbox-row">
+      <label>
+        <input type="checkbox" id="smallCheck" />
+        Small Orders
+      </label>
+      <!-- Show quantity input only if checked -->
+      <input
+        type="number"
+        id="smallQty"
+        class="quantity-input"
+        min="1"
+        max="999"
+        placeholder="Qty"
+        disabled
+      />
+    </div>
+
+    <div class="checkbox-row">
+      <label>
+        <input type="checkbox" id="mediumCheck" />
+        Medium Orders
+      </label>
+      <input
+        type="number"
+        id="mediumQty"
+        class="quantity-input"
+        min="1"
+        max="999"
+        placeholder="Qty"
+        disabled
+      />
+    </div>
+
     <button type="submit">Add Shipping Label</button>
   </form>
 
-  <!-- Download button (hidden until labels exist) -->
+  <!-- Action buttons -->
   <button id="downloadPdfBtn" style="display: none;">Download PDF</button>
+
+  <div class="export-import">
+    <!-- Export data button -->
+    <button id="exportBtn">Export Data</button>
+    <!-- Import data button (clicking triggers hidden file input) -->
+    <button id="importBtn">Import Data</button>
+    <!-- Hidden file input for import -->
+    <input type="file" id="fileInput" accept=".json" />
+  </div>
 
   <!-- Preview container -->
   <div id="preview"></div>
 
-  <!-- Load jsPDF (no integrity attribute) -->
+  <!-- Load jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-
-  <!-- Inline JS -->
   <script>
     let labels = [];
 
+    // References
     const shippingForm = document.getElementById('shippingForm');
     const fromField = document.getElementById('fromField');
     const toField = document.getElementById('toField');
@@ -130,30 +192,78 @@
     const stateField = document.getElementById('stateField');
     const zipField = document.getElementById('zipField');
 
+    const smallCheck = document.getElementById('smallCheck');
+    const smallQty = document.getElementById('smallQty');
+    const mediumCheck = document.getElementById('mediumCheck');
+    const mediumQty = document.getElementById('mediumQty');
+
     const previewDiv = document.getElementById('preview');
     const downloadPdfBtn = document.getElementById('downloadPdfBtn');
 
-    // 1) Load existing labels from localStorage on page load
-    window.addEventListener('load', () => {
-      loadLabelsFromLocalStorage();
-    });
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const fileInput = document.getElementById('fileInput');
 
-    // Force mobile view to reset (zoom out) after submission
-    function forceMobileReset() {
-      const metaTag = document.getElementById('viewportMeta');
-      // Temporarily set maximum-scale=1.0 to force a zoom-out
-      metaTag.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
-
-      // After a short delay, remove the maximum-scale restriction
-      setTimeout(() => {
-        metaTag.setAttribute('content', 'width=device-width, initial-scale=1.0');
-      }, 300);
+    // =======================
+    // COOKIE UTILS
+    // =======================
+    function setLabelsCookie() {
+      const encoded = encodeURIComponent(JSON.stringify(labels));
+      // 30-day expiry
+      document.cookie = `labels=${encoded}; path=/; max-age=2592000`;
     }
 
+    function getLabelsFromCookie() {
+      const pairs = document.cookie.split(';');
+      for (let i = 0; i < pairs.length; i++) {
+        const [key, val] = pairs[i].trim().split('=');
+        if (key === 'labels') {
+          return JSON.parse(decodeURIComponent(val));
+        }
+      }
+      return null;
+    }
+
+    // =======================
+    // PAGE LOAD
+    // =======================
+    window.addEventListener('load', () => {
+      // Load from cookie
+      const stored = getLabelsFromCookie();
+      if (stored) {
+        labels = stored;
+        renderPreview();
+        if (labels.length > 0) {
+          downloadPdfBtn.style.display = 'inline-block';
+        }
+      }
+    });
+
+    // =======================
+    // CHECKBOX BEHAVIOR
+    // =======================
+    smallCheck.addEventListener('change', () => {
+      // Enable or disable the quantity input
+      smallQty.disabled = !smallCheck.checked;
+      if (!smallCheck.checked) {
+        smallQty.value = '';
+      }
+    });
+
+    mediumCheck.addEventListener('change', () => {
+      mediumQty.disabled = !mediumCheck.checked;
+      if (!mediumCheck.checked) {
+        mediumQty.value = '';
+      }
+    });
+
+    // =======================
+    // FORM SUBMISSION
+    // =======================
     shippingForm.addEventListener('submit', (e) => {
       e.preventDefault();
 
-      // Grab each field individually
+      // Collect user input
       const fromValue = fromField.value.trim();
       const toValue = toField.value.trim();
       const addressValue = addressField.value.trim();
@@ -161,61 +271,77 @@
       const stateValue = stateField.value.trim();
       const zipValue = zipField.value.trim();
 
-      // Create a label object (store separately)
+      // See if small or medium is checked, get quantity if checked
+      let smallCount = 0;
+      let mediumCount = 0;
+
+      if (smallCheck.checked) {
+        // parseInt or default 1
+        smallCount = parseInt(smallQty.value, 10) || 1;
+      }
+      if (mediumCheck.checked) {
+        mediumCount = parseInt(mediumQty.value, 10) || 1;
+      }
+
+      // Build label object
       const newLabel = {
         from: fromValue,
         to: toValue,
         address: addressValue,
         city: cityValue,
         state: stateValue,
-        zip: zipValue
+        zip: zipValue,
+        small: smallCount,
+        medium: mediumCount
       };
 
-      // Add to array
       labels.push(newLabel);
       renderPreview();
-
-      // 2) Save updated labels to localStorage
-      saveLabelsToLocalStorage();
+      setLabelsCookie();
 
       // Clear fields
       shippingForm.reset();
+      // Reset checkboxes & inputs
+      smallQty.disabled = true;
+      smallQty.value = '';
+      smallCheck.checked = false;
 
-      // Close keyboard on mobile
+      mediumQty.disabled = true;
+      mediumQty.value = '';
+      mediumCheck.checked = false;
+
+      // Force mobile reset
       document.activeElement.blur();
-
-      // Force mobile view back to default
       forceMobileReset();
 
-      // Show "Download PDF" if there's at least one label
+      // Show PDF button if there's at least 1 label
       if (labels.length > 0) {
         downloadPdfBtn.style.display = 'inline-block';
       }
     });
 
+    // =======================
+    // RENDER PREVIEW
+    // =======================
     function renderPreview() {
       previewDiv.innerHTML = '';
-
-      // For each label, we show Address on one line, then City/State/Zip on the next
       labels.forEach((label, index) => {
-        const labelDiv = document.createElement('div');
-        labelDiv.classList.add('label-item');
-
-        // City, State, Zip all in one line: "City, State ZipCode"
         const cityStateZip = `${label.city}, ${label.state} ${label.zip}`;
 
-        labelDiv.innerHTML = `
+        const div = document.createElement('div');
+        div.classList.add('label-item');
+        div.innerHTML = `
           <p><strong>From:</strong> ${label.from}</p>
           <p><strong>To:</strong> ${label.to}</p>
           <p><strong>Address:</strong> ${label.address}</p>
           <p><strong>City/State/Zip:</strong> ${cityStateZip}</p>
-
+          <p><strong>Small Orders:</strong> ${label.small}</p>
+          <p><strong>Medium Orders:</strong> ${label.medium}</p>
           <button class="remove-btn" data-index="${index}">Remove</button>
         `;
-        previewDiv.appendChild(labelDiv);
+        previewDiv.appendChild(div);
       });
 
-      // Attach remove handlers
       document.querySelectorAll('.remove-btn').forEach((btn) => {
         btn.addEventListener('click', removeLabel);
       });
@@ -225,20 +351,18 @@
       const index = e.target.dataset.index;
       labels.splice(index, 1);
       renderPreview();
-
-      // 2) Save updated labels to localStorage
-      saveLabelsToLocalStorage();
-
-      // Hide PDF button if no labels left
+      setLabelsCookie();
       if (labels.length === 0) {
         downloadPdfBtn.style.display = 'none';
       }
     }
 
-    // Generate the PDF
+    // =======================
+    // PDF (no small/medium)
+    // =======================
     downloadPdfBtn.addEventListener('click', () => {
       if (!window.jspdf) {
-        alert('Error: jsPDF did not load.');
+        alert('Error: jsPDF not loaded.');
         return;
       }
       const { jsPDF } = window.jspdf;
@@ -249,9 +373,8 @@
       const pageHeight = doc.internal.pageSize.getHeight();
       let yPos = 10;
 
-      // Loop each label, printing line by line
       labels.forEach((label) => {
-        // "From" line
+        // "From"
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
@@ -259,7 +382,7 @@
         doc.text(`From: ${label.from}`, 10, yPos);
         yPos += 7;
 
-        // "To" line
+        // "To"
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
@@ -267,7 +390,7 @@
         doc.text(`To: ${label.to}`, 10, yPos);
         yPos += 7;
 
-        // "Address" line
+        // "Address"
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
@@ -275,36 +398,82 @@
         doc.text(`Address: ${label.address}`, 10, yPos);
         yPos += 7;
 
-        // City/State/Zip line
-        const cityStateZip = `${label.city}, ${label.state} ${label.zip}`;
+        // "City/State/Zip"
+        const line2 = `${label.city}, ${label.state} ${label.zip}`;
         if (yPos + 7 > pageHeight) {
           doc.addPage();
           yPos = 10;
         }
-        doc.text(`${cityStateZip}`, 10, yPos);
-        yPos += 15; // blank space before next label
+        doc.text(line2, 10, yPos);
+        yPos += 15;
       });
-
       doc.save('shipping-labels.pdf');
     });
 
-    // 3) Utility: Save labels to localStorage
-    function saveLabelsToLocalStorage() {
-      localStorage.setItem('labels', JSON.stringify(labels));
-    }
+    // =======================
+    // EXPORT / IMPORT
+    // =======================
+    exportBtn.addEventListener('click', () => {
+      // Create JSON string
+      const dataStr = JSON.stringify(labels, null, 2);
+      // Create a blob
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      // Create a temp URL
+      const url = URL.createObjectURL(blob);
+      // Create a temporary <a> to download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'shipping-labels.json'; // The file name
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      // Cleanup
+      URL.revokeObjectURL(url);
+    });
 
-    // 3) Utility: Load labels from localStorage
-    function loadLabelsFromLocalStorage() {
-      const data = localStorage.getItem('labels');
-      if (data) {
-        labels = JSON.parse(data);
-        // Render them
-        renderPreview();
-        // Show PDF button if labels exist
-        if (labels.length > 0) {
-          downloadPdfBtn.style.display = 'inline-block';
+    // Clicking "Import Data" triggers file input
+    importBtn.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    // Handle file input change
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const imported = JSON.parse(evt.target.result);
+          if (Array.isArray(imported)) {
+            // Overwrite or merge? We'll overwrite here
+            labels = imported;
+            renderPreview();
+            setLabelsCookie();
+            if (labels.length > 0) {
+              downloadPdfBtn.style.display = 'inline-block';
+            }
+            alert('Data imported successfully!');
+          } else {
+            alert('Invalid data format. Expected an array.');
+          }
+        } catch (err) {
+          alert('Error parsing JSON: ' + err.message);
         }
-      }
+      };
+      reader.readAsText(file);
+      // Clear the input so if user re-selects the same file, it triggers again
+      e.target.value = '';
+    });
+
+    // =======================
+    // FORCE MOBILE RESET
+    // =======================
+    function forceMobileReset() {
+      const metaTag = document.getElementById('viewportMeta');
+      metaTag.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
+      setTimeout(() => {
+        metaTag.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      }, 300);
     }
   </script>
 </body>
