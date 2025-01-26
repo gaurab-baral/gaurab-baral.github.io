@@ -146,7 +146,7 @@
       <!-- Container with slider for small -->
       <div class="slider-container" id="smallSliderContainer">
         <div class="slider-label">
-          <span>Number of Small Orders: <span id="smallSliderValue">1</span></span>
+          <span><span id="smallSliderValue">1</span></span>
         </div>
         <input 
           type="range" 
@@ -166,7 +166,7 @@
       <!-- Container with slider for medium -->
       <div class="slider-container" id="mediumSliderContainer">
         <div class="slider-label">
-          <span>Number of Medium Orders: <span id="mediumSliderValue">1</span></span>
+          <span><span id="mediumSliderValue">1</span></span>
         </div>
         <input
           type="range"
@@ -184,6 +184,9 @@
   <!-- Action buttons -->
   <button id="downloadPdfBtn" style="display: none;">Download PDF</button>
 
+  <!-- Preview container -->
+  <div id="preview"></div>
+
   <div class="export-import">
     <!-- Export data button -->
     <button id="exportBtn">Export Data</button>
@@ -192,9 +195,6 @@
     <!-- Hidden file input for import -->
     <input type="file" id="fileInput" accept=".json" />
   </div>
-
-  <!-- Preview container -->
-  <div id="preview"></div>
 
   <!-- Load jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
