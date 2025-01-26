@@ -84,6 +84,16 @@
     .checkbox-row {
       margin-top: 10px;
     }
+
+    /* Make checkbox & label on the same line */
+    .checkbox-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: normal; /* Instead of bold */
+      margin: 0; /* Remove extra top margin */
+    }
+
     .slider-container {
       display: none; /* Hidden until checkbox is checked */
       margin-top: 5px;
@@ -127,9 +137,9 @@
     <label for="zipField">Zip Code:</label>
     <input type="text" id="zipField" required />
 
-    <!-- Checkboxes for small/medium. Show slider if checked. -->
+    <!-- Checkboxes for small/medium orders (same line for checkbox + text) -->
     <div class="checkbox-row">
-      <label for="smallCheck" style="display: inline; font-weight:normal;">
+      <label class="checkbox-inline" for="smallCheck">
         <input type="checkbox" id="smallCheck" />
         Small Orders
       </label>
@@ -149,7 +159,7 @@
     </div>
 
     <div class="checkbox-row">
-      <label for="mediumCheck" style="display: inline; font-weight:normal;">
+      <label class="checkbox-inline" for="mediumCheck">
         <input type="checkbox" id="mediumCheck" />
         Medium Orders
       </label>
@@ -174,9 +184,6 @@
   <!-- Action buttons -->
   <button id="downloadPdfBtn" style="display: none;">Download PDF</button>
 
-  <!-- Preview container -->
-  <div id="preview"></div>
-
   <div class="export-import">
     <!-- Export data button -->
     <button id="exportBtn">Export Data</button>
@@ -185,6 +192,9 @@
     <!-- Hidden file input for import -->
     <input type="file" id="fileInput" accept=".json" />
   </div>
+
+  <!-- Preview container -->
+  <div id="preview"></div>
 
   <!-- Load jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -471,8 +481,7 @@
         }
       };
       reader.readAsText(file);
-      // Clear the input so if user re-selects the same file, it triggers again
-      e.target.value = '';
+      e.target.value = ''; // reset file input
     });
 
     // =======================
