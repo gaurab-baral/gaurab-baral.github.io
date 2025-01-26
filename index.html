@@ -85,12 +85,12 @@
       margin-top: 10px;
     }
 
-    /* Make checkbox & label on the same line */
+    /* Make checkbox & label on the same line with minimal gap */
     .checkbox-inline {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      font-weight: normal; /* Instead of bold */
+      gap: 2px; /* reduced gap from 5px to 2px */
+      font-weight: normal;
       margin: 0; /* Remove extra top margin */
     }
 
@@ -109,8 +109,41 @@
       font-weight: bold;
       margin-left: 10px;
     }
+
+    /* Keep the track small, but make the thumb bigger */
     input[type="range"] {
       margin: 0;
+      /* The track stays the same size by default (height is OS/browser-dependent) */
+    }
+    /* For WebKit (Chrome, Safari) */
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      background: #4CAF50;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      margin-top: -6px; /* center the thumb vertically if needed */
+    }
+    input[type="range"]::-webkit-slider-runnable-track {
+      height: 4px;
+      background: #ddd;
+      border-radius: 2px;
+    }
+    /* For Firefox */
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      background: #4CAF50;
+      border-radius: 50%;
+      border: 1px solid #ccc;
+      cursor: pointer;
+    }
+    input[type="range"]::-moz-range-track {
+      height: 4px;
+      background: #ddd;
+      border-radius: 2px;
     }
   </style>
 </head>
@@ -137,7 +170,7 @@
     <label for="zipField">Zip Code:</label>
     <input type="text" id="zipField" required />
 
-    <!-- Checkboxes for small/medium orders (same line for checkbox + text) -->
+    <!-- Checkboxes for small/medium orders (checkbox + text in one line, minimal gap) -->
     <div class="checkbox-row">
       <label class="checkbox-inline" for="smallCheck">
         <input type="checkbox" id="smallCheck" />
@@ -273,7 +306,6 @@
         smallSliderContainer.style.display = 'none';
       }
     });
-    // Update small slider label
     smallSlider.addEventListener('input', () => {
       smallSliderValue.textContent = smallSlider.value;
     });
@@ -285,7 +317,6 @@
         mediumSliderContainer.style.display = 'none';
       }
     });
-    // Update medium slider label
     mediumSlider.addEventListener('input', () => {
       mediumSliderValue.textContent = mediumSlider.value;
     });
@@ -338,7 +369,7 @@
       mediumSlider.value = '1';
       mediumSliderValue.textContent = '1';
 
-      // Force mobile reset
+      // Blur keyboard on mobile
       document.activeElement.blur();
       forceMobileReset();
 
