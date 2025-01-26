@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta id="viewportMeta" name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <title>Shipping Label Generator</title>
   <style>
     body {
@@ -49,26 +48,6 @@
       background: #449a48;
     }
 
-    .checkbox-row {
-      display: flex;
-      align-items: center;
-      margin-top: 10px;
-      gap: 10px;
-    }
-    .checkbox-row label {
-      display: inline;
-      margin: 0;
-      font-weight: normal;
-    }
-    .checkbox-row input[type="checkbox"] {
-      width: auto;
-      margin-top: 0;
-    }
-    .quantity-input {
-      width: 80px;
-      margin-left: auto; /* push to the right in the row */
-    }
-
     #preview {
       margin-top: 30px;
     }
@@ -94,12 +73,34 @@
     #fileInput {
       display: none;
     }
-
     /* Export/Import container for layout */
     .export-import {
       margin-top: 20px;
       display: flex;
       gap: 10px;
+    }
+
+    /* For the small/medium checkboxes and sliders */
+    .checkbox-row {
+      margin-top: 10px;
+    }
+    .slider-container {
+      display: none; /* Hidden until checkbox is checked */
+      margin-top: 5px;
+    }
+    .slider-label {
+      font-weight: normal;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 5px;
+    }
+    .slider-value {
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    input[type="range"] {
+      margin: 0;
     }
   </style>
 </head>
@@ -126,38 +127,45 @@
     <label for="zipField">Zip Code:</label>
     <input type="text" id="zipField" required />
 
-    <!-- Checkboxes for small/medium orders -->
+    <!-- Checkboxes for small/medium. Show slider if checked. -->
     <div class="checkbox-row">
-      <label>
-        <input type="checkbox" id="smallCheck" />
+      <input type="checkbox" id="smallCheck" />
+      <label for="smallCheck" style="display: inline; font-weight:normal;">
         Small Orders
       </label>
-      <!-- Show quantity input only if checked -->
-      <input
-        type="number"
-        id="smallQty"
-        class="quantity-input"
-        min="1"
-        max="999"
-        placeholder="Qty"
-        disabled
-      />
+      <!-- Container with slider for small -->
+      <div class="slider-container" id="smallSliderContainer">
+        <div class="slider-label">
+          <span>Number of Small Orders: <span id="smallSliderValue">1</span></span>
+        </div>
+        <input 
+          type="range" 
+          id="smallSlider" 
+          min="1" 
+          max="20" 
+          value="1"
+        />
+      </div>
     </div>
 
     <div class="checkbox-row">
-      <label>
-        <input type="checkbox" id="mediumCheck" />
+      <input type="checkbox" id="mediumCheck" />
+      <label for="mediumCheck" style="display: inline; font-weight:normal;">
         Medium Orders
       </label>
-      <input
-        type="number"
-        id="mediumQty"
-        class="quantity-input"
-        min="1"
-        max="999"
-        placeholder="Qty"
-        disabled
-      />
+      <!-- Container with slider for medium -->
+      <div class="slider-container" id="mediumSliderContainer">
+        <div class="slider-label">
+          <span>Number of Medium Orders: <span id="mediumSliderValue">1</span></span>
+        </div>
+        <input
+          type="range"
+          id="mediumSlider"
+          min="1"
+          max="20"
+          value="1"
+        />
+      </div>
     </div>
 
     <button type="submit">Add Shipping Label</button>
@@ -165,6 +173,9 @@
 
   <!-- Action buttons -->
   <button id="downloadPdfBtn" style="display: none;">Download PDF</button>
+
+  <!-- Preview container -->
+  <div id="preview"></div>
 
   <div class="export-import">
     <!-- Export data button -->
@@ -174,9 +185,6 @@
     <!-- Hidden file input for import -->
     <input type="file" id="fileInput" accept=".json" />
   </div>
-
-  <!-- Preview container -->
-  <div id="preview"></div>
 
   <!-- Load jsPDF -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -192,10 +200,16 @@
     const stateField = document.getElementById('stateField');
     const zipField = document.getElementById('zipField');
 
+    // Checkboxes + slider containers
     const smallCheck = document.getElementById('smallCheck');
-    const smallQty = document.getElementById('smallQty');
+    const smallSliderContainer = document.getElementById('smallSliderContainer');
+    const smallSlider = document.getElementById('smallSlider');
+    const smallSliderValue = document.getElementById('smallSliderValue');
+
     const mediumCheck = document.getElementById('mediumCheck');
-    const mediumQty = document.getElementById('mediumQty');
+    const mediumSliderContainer = document.getElementById('mediumSliderContainer');
+    const mediumSlider = document.getElementById('mediumSlider');
+    const mediumSliderValue = document.getElementById('mediumSliderValue');
 
     const previewDiv = document.getElementById('preview');
     const downloadPdfBtn = document.getElementById('downloadPdfBtn');
@@ -214,9 +228,9 @@
     }
 
     function getLabelsFromCookie() {
-      const pairs = document.cookie.split(';');
-      for (let i = 0; i < pairs.length; i++) {
-        const [key, val] = pairs[i].trim().split('=');
+      const parts = document.cookie.split(';');
+      for (let i = 0; i < parts.length; i++) {
+        const [key, val] = parts[i].trim().split('=');
         if (key === 'labels') {
           return JSON.parse(decodeURIComponent(val));
         }
@@ -240,21 +254,30 @@
     });
 
     // =======================
-    // CHECKBOX BEHAVIOR
+    // CHECKBOX & SLIDER LOGIC
     // =======================
     smallCheck.addEventListener('change', () => {
-      // Enable or disable the quantity input
-      smallQty.disabled = !smallCheck.checked;
-      if (!smallCheck.checked) {
-        smallQty.value = '';
+      if (smallCheck.checked) {
+        smallSliderContainer.style.display = 'block';
+      } else {
+        smallSliderContainer.style.display = 'none';
       }
+    });
+    // Update small slider label
+    smallSlider.addEventListener('input', () => {
+      smallSliderValue.textContent = smallSlider.value;
     });
 
     mediumCheck.addEventListener('change', () => {
-      mediumQty.disabled = !mediumCheck.checked;
-      if (!mediumCheck.checked) {
-        mediumQty.value = '';
+      if (mediumCheck.checked) {
+        mediumSliderContainer.style.display = 'block';
+      } else {
+        mediumSliderContainer.style.display = 'none';
       }
+    });
+    // Update medium slider label
+    mediumSlider.addEventListener('input', () => {
+      mediumSliderValue.textContent = mediumSlider.value;
     });
 
     // =======================
@@ -271,17 +294,10 @@
       const stateValue = stateField.value.trim();
       const zipValue = zipField.value.trim();
 
-      // See if small or medium is checked, get quantity if checked
-      let smallCount = 0;
-      let mediumCount = 0;
-
-      if (smallCheck.checked) {
-        // parseInt or default 1
-        smallCount = parseInt(smallQty.value, 10) || 1;
-      }
-      if (mediumCheck.checked) {
-        mediumCount = parseInt(mediumQty.value, 10) || 1;
-      }
+      // If smallCheck is checked, get slider value; otherwise 0
+      const smallCount = smallCheck.checked ? parseInt(smallSlider.value, 10) : 0;
+      // If mediumCheck is checked, get slider value; otherwise 0
+      const mediumCount = mediumCheck.checked ? parseInt(mediumSlider.value, 10) : 0;
 
       // Build label object
       const newLabel = {
@@ -301,14 +317,16 @@
 
       // Clear fields
       shippingForm.reset();
-      // Reset checkboxes & inputs
-      smallQty.disabled = true;
-      smallQty.value = '';
-      smallCheck.checked = false;
 
-      mediumQty.disabled = true;
-      mediumQty.value = '';
-      mediumCheck.checked = false;
+      // Hide sliders again
+      smallSliderContainer.style.display = 'none';
+      mediumSliderContainer.style.display = 'none';
+
+      // Reset slider values, text
+      smallSlider.value = '1';
+      smallSliderValue.textContent = '1';
+      mediumSlider.value = '1';
+      mediumSliderValue.textContent = '1';
 
       // Force mobile reset
       document.activeElement.blur();
@@ -327,7 +345,6 @@
       previewDiv.innerHTML = '';
       labels.forEach((label, index) => {
         const cityStateZip = `${label.city}, ${label.state} ${label.zip}`;
-
         const div = document.createElement('div');
         div.classList.add('label-item');
         div.innerHTML = `
@@ -337,6 +354,7 @@
           <p><strong>City/State/Zip:</strong> ${cityStateZip}</p>
           <p><strong>Small Orders:</strong> ${label.small}</p>
           <p><strong>Medium Orders:</strong> ${label.medium}</p>
+
           <button class="remove-btn" data-index="${index}">Remove</button>
         `;
         previewDiv.appendChild(div);
@@ -414,29 +432,22 @@
     // EXPORT / IMPORT
     // =======================
     exportBtn.addEventListener('click', () => {
-      // Create JSON string
       const dataStr = JSON.stringify(labels, null, 2);
-      // Create a blob
       const blob = new Blob([dataStr], { type: 'application/json' });
-      // Create a temp URL
       const url = URL.createObjectURL(blob);
-      // Create a temporary <a> to download
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'shipping-labels.json'; // The file name
+      a.download = 'shipping-labels.json';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      // Cleanup
       URL.revokeObjectURL(url);
     });
 
-    // Clicking "Import Data" triggers file input
     importBtn.addEventListener('click', () => {
       fileInput.click();
     });
 
-    // Handle file input change
     fileInput.addEventListener('change', (e) => {
       const file = e.target.files[0];
       if (!file) return;
@@ -445,7 +456,6 @@
         try {
           const imported = JSON.parse(evt.target.result);
           if (Array.isArray(imported)) {
-            // Overwrite or merge? We'll overwrite here
             labels = imported;
             renderPreview();
             setLabelsCookie();
